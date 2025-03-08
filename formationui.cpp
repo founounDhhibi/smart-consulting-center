@@ -29,8 +29,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->status->addItem("À venir");
     ui->status->addItem("En attente");
 
-
-
+    // Activer l'édition des cellules lors d'un double-clic
+    connect(ui->table_formation, &QTableWidget::doubleClicked, this, [=](const QModelIndex &index) {
+        int row = index.row(); // Récupérer l'index de la ligne double-cliquée
+        this->modifierFormation(row); // Appeler la fonction modifierFormation
+    });
 }
 void MainWindow::afficherFormations()
 {
@@ -45,10 +48,10 @@ void MainWindow::afficherFormations()
     // Effacer les anciennes données du tableau
     ui->table_formation->clear();
     ui->table_formation->setRowCount(0);
-    ui->table_formation->setColumnCount(7); // 6 colonnes existantes + 1 pour le bouton Modifier
+    ui->table_formation->setColumnCount(6); // Supprimer la colonne 6 (bouton Modifier)
 
     // Définir les en-têtes
-    QStringList headers = {"ID", "Titre", "Centre", "Date", "Localisation", "Status", "Modifier"};
+    QStringList headers = {"ID", "Titre", "Centre", "Date", "Localisation", "Status"};
     ui->table_formation->setHorizontalHeaderLabels(headers);
 
     int row = 0;
@@ -57,44 +60,48 @@ void MainWindow::afficherFormations()
         for (int col = 0; col < 6; col++) {
             ui->table_formation->setItem(row, col, new QTableWidgetItem(query.value(col).toString()));
         }
-
-        // Ajouter un bouton Modifier
-        QPushButton *btnModifier = new QPushButton("Modifier");
-        ui->table_formation->setCellWidget(row, 6, btnModifier);
-
-        // Connecter le bouton à une fonction de modification
-        connect(btnModifier, &QPushButton::clicked, this, [=]() {
-            this->modifierFormation(row);
-        });
-
         row++;
     }
 }
 void MainWindow::modifierFormation(int row)
 {
     int id = ui->table_formation->item(row, 0)->text().toInt();
+
+    // Activer l'édition des cellules
     for (int col = 1; col < 6; col++) { // On ne touche pas à l'ID
         ui->table_formation->item(row, col)->setFlags(ui->table_formation->item(row, col)->flags() | Qt::ItemIsEditable);
     }
-    QPushButton *btnSauvegarder = new QPushButton("Sauvegarder");
-    ui->table_formation->setCellWidget(row, 6, btnSauvegarder);//m
 
-    connect(btnSauvegarder, &QPushButton::clicked, this, [=]() {
-        QString titre = ui->table_formation->item(row, 1)->text();
-        QString centre = ui->table_formation->item(row, 2)->text();
-        QDate date = QDate::fromString(ui->table_formation->item(row, 3)->text(), "yyyy-MM-dd");
-        QString localisation = ui->table_formation->item(row, 4)->text();
-        QString status = ui->table_formation->item(row, 5)->text();
-        formation f(id, titre, centre, date, localisation, status);
-        if (f.modifier(id)) {
-            QMessageBox::information(this, "Modification", "Formation mise à jour avec succès.");
-        } else {
-            QMessageBox::critical(this, "Erreur", "Échec de la mise à jour.");
-        }
-        afficherFormations();
-    });
+    // Récupérer le bouton "Modifier" depuis l'interface utilisateur
+    QPushButton *btnModifier = ui->modifier; // Utilisez le nom d'objet du bouton
+
+    if (btnModifier) {
+        // Déconnecter les anciens signaux (si nécessaire)
+        disconnect(btnModifier, &QPushButton::clicked, nullptr, nullptr);
+
+        // Connecter le bouton à la fonction de sauvegarde
+        connect(btnModifier, &QPushButton::clicked, this, [=]() {
+            QString titre = ui->table_formation->item(row, 1)->text();
+            QString centre = ui->table_formation->item(row, 2)->text();
+            QDate date = QDate::fromString(ui->table_formation->item(row, 3)->text(), "yyyy-MM-dd");
+            QString localisation = ui->table_formation->item(row, 4)->text();
+            QString status = ui->table_formation->item(row, 5)->text();
+
+            // Créer un objet formation et modifier la base de données
+            formation f(id, titre, centre, date, localisation, status);
+            if (f.modifier(id)) {
+                QMessageBox::information(this, "Modification", "Formation mise à jour avec succès.");
+            } else {
+                QMessageBox::critical(this, "Erreur", "Échec de la mise à jour.");
+            }
+
+            // Rafraîchir l'affichage
+            afficherFormations();
+        });
+    } else {
+        qDebug() << "Erreur : Bouton Modifier non trouvé.";
+    }
 }
-
 MainWindow::~MainWindow()
 {
     delete ui;

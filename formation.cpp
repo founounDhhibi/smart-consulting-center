@@ -30,7 +30,6 @@ void formation::setDateFormation(QDate date) { date_formation = date; }
 void formation::setLocalisation(QString localisation) { this->localisation = localisation; }
 void formation::setStatus(QString status) { this->status = status; } // Setter pour status
 
-
 bool formation::ajouter()
 {
     // Vérification des champs obligatoires
@@ -39,30 +38,27 @@ bool formation::ajouter()
         return false;
     }
 
-    // Validation des longueurs des champs
-    if (titre.length() > 255) {
-        QMessageBox::critical(nullptr, "Erreur", "Le titre est trop long (max 255 caractères).");
+    // Validation des longueurs des champs (titre et centre)
+    if (titre.length() < 5 || titre.length() > 20) {
+        QMessageBox::critical(nullptr, "Erreur", "Le titre doit contenir entre 5 et 20 caractères.");
         return false;
     }
 
-    if (centre.length() > 255) {
-        QMessageBox::critical(nullptr, "Erreur", "Le centre est trop long (max 255 caractères).");
-        return false;
-    }
-
-    if (localisation.length() > 255) {
-        QMessageBox::critical(nullptr, "Erreur", "La localisation est trop longue (max 255 caractères).");
-        return false;
-    }
-
-    if (status.length() > 50) {
-        QMessageBox::critical(nullptr, "Erreur", "Le statut est trop long (max 50 caractères).");
+    if (centre.length() < 5 || centre.length() > 20) {
+        QMessageBox::critical(nullptr, "Erreur", "Le centre doit contenir entre 5 et 20 caractères.");
         return false;
     }
 
     // Validation de la date
     if (!date_formation.isValid() || date_formation < QDate::currentDate()) {
         QMessageBox::critical(nullptr, "Erreur", "La date de formation est invalide ou antérieure à aujourd'hui.");
+        return false;
+    }
+
+    // Validation du statut
+    QStringList statutsValides = {"En cours", "Planifiée", "Terminée", "Annulée", "Reportée", "À venir", "En attente"};
+    if (!statutsValides.contains(status)) {
+        QMessageBox::critical(nullptr, "Erreur", "Le statut doit être l'une des valeurs suivantes : En cours, Planifiée, Terminée, Annulée, Reportée, À venir, En attente.");
         return false;
     }
 
@@ -86,7 +82,24 @@ bool formation::ajouter()
 // Modifier une formation
 bool formation::modifier(int id)
 {
+    // Vérification des champs obligatoires
+    if (titre.isEmpty() || centre.isEmpty() || localisation.isEmpty() || status.isEmpty()) {
+        QMessageBox::critical(nullptr, "Erreur", "Veuillez remplir tous les champs requis.");
+        return false;
+    }
 
+    // Validation des longueurs des champs (titre et centre)
+    if (titre.length() < 5 || titre.length() > 20) {
+        QMessageBox::critical(nullptr, "Erreur", "Le titre doit contenir entre 5 et 20 caractères.");
+        return false;
+    }
+
+    if (centre.length() < 5 || centre.length() > 20) {
+        QMessageBox::critical(nullptr, "Erreur", "Le centre doit contenir entre 5 et 20 caractères.");
+        return false;
+    }
+
+    // Préparation de la requête SQL
     QSqlQuery query;
     query.prepare("UPDATE FORMATION SET TITRE=:titre, CENTRE=:centre, DATE_FORMATION=:date, LOCALISATION=:localisation, STATUS=:status "
                   "WHERE ID_FORMATION=:id");
@@ -98,13 +111,12 @@ bool formation::modifier(int id)
     query.bindValue(":status", status);
 
     if (query.exec()) {
-        return true;
+        return true; // Modification réussie
     } else {
-        qDebug() << "Erreur modification formation:" << query.lastError().text();
-        return false;
+        QMessageBox::critical(nullptr, "Erreur", "Erreur lors de la modification de la formation : " + query.lastError().text());
+        return false; // Modification échouée
     }
 }
-
 
 // Supprimer une formation
 bool formation::supprimer(int id)

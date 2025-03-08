@@ -773,7 +773,7 @@ QPushButton:pressed {
 url(:/icons/icones/14.png)</string>
       </property>
       <property name="text">
-       <string>modifier</string>
+       <string>sauvgarder</string>
       </property>
       <property name="icon">
        <iconset resource="icons.qrc">
