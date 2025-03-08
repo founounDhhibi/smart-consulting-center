@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="page">
      <widget class="QLabel" name="label_8">
@@ -396,9 +396,10 @@ QHeaderView::section {
        <number>1</number>
       </property>
       <property name="columnCount">
-       <number>5</number>
+       <number>6</number>
       </property>
       <row/>
+      <column/>
       <column/>
       <column/>
       <column/>
@@ -427,6 +428,11 @@ QHeaderView::section {
       <item row="0" column="4">
        <property name="text">
         <string>status</string>
+       </property>
+      </item>
+      <item row="0" column="5">
+       <property name="text">
+        <string>modifier</string>
        </property>
       </item>
      </widget>
@@ -738,7 +744,7 @@ url(:/icons/icones/14.png)</string>
       <property name="geometry">
        <rect>
         <x>1130</x>
-        <y>320</y>
+        <y>310</y>
         <width>191</width>
         <height>51</height>
        </rect>

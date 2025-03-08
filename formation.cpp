@@ -3,6 +3,7 @@
 #include <QSqlError>
 #include <QVariant>
 #include <QDebug>
+#include <QMessageBox>
 
 // Constructeurs
 formation::formation()
@@ -29,41 +30,72 @@ void formation::setDateFormation(QDate date) { date_formation = date; }
 void formation::setLocalisation(QString localisation) { this->localisation = localisation; }
 void formation::setStatus(QString status) { this->status = status; } // Setter pour status
 
-// Ajouter une formation
+
 bool formation::ajouter()
 {
+    // Vérification des champs obligatoires
+    if (titre.isEmpty() || centre.isEmpty() || localisation.isEmpty() || status.isEmpty()) {
+        QMessageBox::critical(nullptr, "Erreur", "Veuillez remplir tous les champs requis.");
+        return false;
+    }
 
+    // Validation des longueurs des champs
+    if (titre.length() > 255) {
+        QMessageBox::critical(nullptr, "Erreur", "Le titre est trop long (max 255 caractères).");
+        return false;
+    }
+
+    if (centre.length() > 255) {
+        QMessageBox::critical(nullptr, "Erreur", "Le centre est trop long (max 255 caractères).");
+        return false;
+    }
+
+    if (localisation.length() > 255) {
+        QMessageBox::critical(nullptr, "Erreur", "La localisation est trop longue (max 255 caractères).");
+        return false;
+    }
+
+    if (status.length() > 50) {
+        QMessageBox::critical(nullptr, "Erreur", "Le statut est trop long (max 50 caractères).");
+        return false;
+    }
+
+    // Validation de la date
+    if (!date_formation.isValid() || date_formation < QDate::currentDate()) {
+        QMessageBox::critical(nullptr, "Erreur", "La date de formation est invalide ou antérieure à aujourd'hui.");
+        return false;
+    }
+
+    // Préparation de la requête SQL
     QSqlQuery query;
-    QString res = QString::number(id_formation);
-    query.prepare("INSERT INTO FORMATION (ID_FORMATION, TITRE, CENTRE, DATE_FORMATION, LOCALISATION, STATUS) "
-                  "VALUES (:id, :titre, :centre, :date, :localisation, :status)");
-    query.bindValue(":id", res);
+    query.prepare("INSERT INTO FORMATION (TITRE, CENTRE, DATE_FORMATION, LOCALISATION, STATUS) "
+                  "VALUES (:titre, :centre, :date, :localisation, :status)");
     query.bindValue(":titre", titre);
     query.bindValue(":centre", centre);
     query.bindValue(":date", date_formation);
     query.bindValue(":localisation", localisation);
-    query.bindValue(":status", status); // Ajouter le statut à la requête
+    query.bindValue(":status", status);
 
     if (query.exec()) {
-        return true;
+        return true; // Ajout réussi
     } else {
-        qDebug() << "Erreur ajout formation:" << query.lastError().text();
-        return false;
+        QMessageBox::critical(nullptr, "Erreur", "Erreur lors de l'ajout de la formation : " + query.lastError().text());
+        return false; // Ajout échoué
     }
 }
-
 // Modifier une formation
 bool formation::modifier(int id)
 {
+
     QSqlQuery query;
     query.prepare("UPDATE FORMATION SET TITRE=:titre, CENTRE=:centre, DATE_FORMATION=:date, LOCALISATION=:localisation, STATUS=:status "
                   "WHERE ID_FORMATION=:id");
     query.bindValue(":id", id);
     query.bindValue(":titre", titre);
     query.bindValue(":centre", centre);
-    query.bindValue(":date", date_formation);
+    query.bindValue(":date", date_formation.toString("yyyy-MM-dd"));
     query.bindValue(":localisation", localisation);
-    query.bindValue(":status", status); // Ajouter le statut à la requête
+    query.bindValue(":status", status);
 
     if (query.exec()) {
         return true;
@@ -72,6 +104,7 @@ bool formation::modifier(int id)
         return false;
     }
 }
+
 
 // Supprimer une formation
 bool formation::supprimer(int id)

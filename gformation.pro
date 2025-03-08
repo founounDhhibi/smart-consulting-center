@@ -13,13 +13,13 @@ CONFIG += c++17
 SOURCES += \
     connection.cpp \
     formation.cpp \
-    main.cpp \
-    mainwindow.cpp
+    formationui.cpp \
+    main.cpp
 
 HEADERS += \
     connection.h \
     formation.h \
-    mainwindow.h
+    formationui.h
 
 FORMS += \
     formation.ui

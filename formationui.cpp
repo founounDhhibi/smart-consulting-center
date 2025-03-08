@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "formationui.h"
 #include "ui_formation.h"
 #include <QMessageBox>
 #include <QDebug>
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::afficherFormations()
 {
     QSqlQuery query;
-    query.prepare("SELECT ID_FORMATION, TITRE, CENTRE, DATE_FORMATION, LOCALISATION FROM FORMATION");
+    query.prepare("SELECT ID_FORMATION, TITRE, CENTRE, DATE_FORMATION, LOCALISATION, STATUS FROM FORMATION");
 
     if (!query.exec()) {
         qDebug() << "Erreur lors de l'affichage des formations:" << query.lastError().text();
@@ -45,45 +45,90 @@ void MainWindow::afficherFormations()
     // Effacer les anciennes données du tableau
     ui->table_formation->clear();
     ui->table_formation->setRowCount(0);
-    ui->table_formation->setColumnCount(5);
+    ui->table_formation->setColumnCount(7); // 6 colonnes existantes + 1 pour le bouton Modifier
 
     // Définir les en-têtes
-    QStringList headers = {"ID", "Titre", "Centre", "Date", "Localisation"};
+    QStringList headers = {"ID", "Titre", "Centre", "Date", "Localisation", "Status", "Modifier"};
     ui->table_formation->setHorizontalHeaderLabels(headers);
 
     int row = 0;
     while (query.next()) {
         ui->table_formation->insertRow(row);
-        for (int col = 0; col < 5; col++) {
+        for (int col = 0; col < 6; col++) {
             ui->table_formation->setItem(row, col, new QTableWidgetItem(query.value(col).toString()));
         }
+
+        // Ajouter un bouton Modifier
+        QPushButton *btnModifier = new QPushButton("Modifier");
+        ui->table_formation->setCellWidget(row, 6, btnModifier);
+
+        // Connecter le bouton à une fonction de modification
+        connect(btnModifier, &QPushButton::clicked, this, [=]() {
+            this->modifierFormation(row);
+        });
+
         row++;
     }
 }
+void MainWindow::modifierFormation(int row)
+{
+    int id = ui->table_formation->item(row, 0)->text().toInt();
+    for (int col = 1; col < 6; col++) { // On ne touche pas à l'ID
+        ui->table_formation->item(row, col)->setFlags(ui->table_formation->item(row, col)->flags() | Qt::ItemIsEditable);
+    }
+    QPushButton *btnSauvegarder = new QPushButton("Sauvegarder");
+    ui->table_formation->setCellWidget(row, 6, btnSauvegarder);//m
 
-
-
+    connect(btnSauvegarder, &QPushButton::clicked, this, [=]() {
+        QString titre = ui->table_formation->item(row, 1)->text();
+        QString centre = ui->table_formation->item(row, 2)->text();
+        QDate date = QDate::fromString(ui->table_formation->item(row, 3)->text(), "yyyy-MM-dd");
+        QString localisation = ui->table_formation->item(row, 4)->text();
+        QString status = ui->table_formation->item(row, 5)->text();
+        formation f(id, titre, centre, date, localisation, status);
+        if (f.modifier(id)) {
+            QMessageBox::information(this, "Modification", "Formation mise à jour avec succès.");
+        } else {
+            QMessageBox::critical(this, "Erreur", "Échec de la mise à jour.");
+        }
+        afficherFormations();
+    });
+}
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
 
-// Fonction pour ajouter une formation
+
 void MainWindow::on_pushButton_ajouter_clicked()
 {
-
+    // Récupérer les valeurs des champs de l'interface utilisateur
     QString titre = ui->titre->text();
     QString centre = ui->centre->text();
     QDate date = ui->date->date();
     QString localisation = ui->localisation->text();
     QString status = ui->status->currentText();
 
-    formation f(0, titre, centre, date, localisation,status);
+    // Créer un objet formation
+    formation f(0, titre, centre, date, localisation, status);
 
+    // Appeler la méthode ajouter() de la classe formation
     if (f.ajouter()) {
+        // Réinitialiser les champs de l'interface utilisateur après un ajout réussi
+        ui->titre->clear();          // Effacer le champ titre
+        ui->centre->clear();         // Effacer le champ centre
+        ui->localisation->clear();   // Effacer le champ localisation
+        ui->status->setCurrentIndex(0); // Réinitialiser le statut à la première option
+        ui->date->setDate(QDate::currentDate()); // Réinitialiser la date à la date actuelle
+
+        // Afficher un message de succès
         QMessageBox::information(this, "Ajout", "Formation ajoutée avec succès.");
+
+        // Rafraîchir l'affichage des formations dans le tableau
+        afficherFormations();
     } else {
+        // Afficher un message d'erreur en cas d'échec
         QMessageBox::critical(this, "Ajout", "Échec de l'ajout de la formation.");
     }
 }
